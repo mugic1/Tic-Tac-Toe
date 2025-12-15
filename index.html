@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Tic Tac Toe</title>
+    <title>Responsive Tic Tac Toe with Haptic Feedback</title>
     <style>
         :root {
             --bg: #f7f7fb;
@@ -12,6 +12,7 @@
             --x-color: #ef4444;
             --o-color: #1f9f5f;
             --muted: #6b7280;
+            --win-gradient: linear-gradient(90deg, rgba(43, 110, 246, 0.06), rgba(31, 159, 95, 0.04));
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -112,7 +113,7 @@
         }
 
         .cell.win {
-            background: linear-gradient(90deg, rgba(43, 110, 246, 0.06), rgba(31, 159, 95, 0.04));
+            background: var(--win-gradient);
             box-shadow: 0 4px 14px rgba(43, 110, 246, 0.06);
             transform: scale(1.02);
             border-color: rgba(43, 110, 246, 0.12);
@@ -149,6 +150,7 @@
             gap: 10px;
             width: 100%;
             justify-content: center;
+            flex-wrap: wrap;
         }
 
         button#restart {
@@ -173,6 +175,37 @@
 
         button#restart:active {
             transform: translateY(0);
+        }
+
+        /* Haptic feedback toggle button */
+        button#hapticToggle {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid #e6e9ef;
+            background: #f8fafc;
+            color: var(--muted);
+            cursor: pointer;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            font-weight: 500;
+            transition: all 0.2s;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        button#hapticToggle:hover {
+            background: #f1f5f9;
+        }
+
+        button#hapticToggle.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        .haptic-icon {
+            font-size: 1.2em;
         }
 
         footer {
@@ -270,7 +303,7 @@
 </head>
 <body>
     <main class="container">
-        <h1>Tic Tac Toe</h1>
+        <h1>Tic Tac Toe with Haptic Feedback</h1>
 
         <section class="game">
             <div id="board" class="board" role="grid" aria-label="Tic Tac Toe board">
@@ -289,26 +322,30 @@
                 <p id="status" class="status" aria-live="polite">Player X's turn</p>
                 <div class="buttons">
                     <button id="restart">Restart Game</button>
+                    <button id="hapticToggle">
+                        <span class="haptic-icon">📳</span>
+                        <span>Haptic: ON</span>
+                    </button>
                 </div>
             </div>
         </section>
 
         <footer>
-            <small>Responsive Tic Tac Toe — Two players, local</small>
+            <small>Responsive Tic Tac Toe with Haptic Feedback — Two players, local</small>
         </footer>
     </main>
 
     <script>
-        // Simple Tic-Tac-Toe (two players)
-        // Author: generated example
-
+        // Simple Tic-Tac-Toe with Haptic Feedback
         const cells = Array.from(document.querySelectorAll('.cell'));
         const statusEl = document.getElementById('status');
         const restartBtn = document.getElementById('restart');
+        const hapticToggleBtn = document.getElementById('hapticToggle');
 
         let board; // array of 'X', 'O' or ''
         let currentPlayer;
         let running;
+        let hapticEnabled = true;
 
         const WIN_COMBINATIONS = [
             [0,1,2],[3,4,5],[6,7,8], // rows
@@ -316,11 +353,91 @@
             [0,4,8],[2,4,6]          // diags
         ];
 
+        // Haptic Feedback System
+        class HapticFeedback {
+            constructor() {
+                this.supported = 'vibrate' in navigator;
+                this.updateToggleButton();
+            }
+
+            // Different vibration patterns for different events
+            patterns = {
+                move: [50],                    // Short tap
+                win: [100, 50, 100, 50, 200],  // Win celebration pattern
+                draw: [150, 100, 150],         // Draw pattern
+                restart: [30, 30, 30, 30],     // Quick pulses for restart
+                error: [100],                  // Error/Invalid move
+                toggle: [50, 30, 50]           // Toggle feedback
+            };
+
+            vibrate(pattern) {
+                if (!hapticEnabled || !this.supported) return;
+                
+                try {
+                    navigator.vibrate(pattern);
+                } catch (error) {
+                    console.warn('Vibration failed:', error);
+                }
+            }
+
+            move() {
+                this.vibrate(this.patterns.move);
+            }
+
+            win() {
+                this.vibrate(this.patterns.win);
+            }
+
+            draw() {
+                this.vibrate(this.patterns.draw);
+            }
+
+            restart() {
+                this.vibrate(this.patterns.restart);
+            }
+
+            error() {
+                this.vibrate(this.patterns.error);
+            }
+
+            toggle() {
+                this.vibrate(this.patterns.toggle);
+            }
+
+            updateToggleButton() {
+                const icon = hapticToggleBtn.querySelector('.haptic-icon');
+                const text = hapticToggleBtn.querySelector('span:not(.haptic-icon)');
+                
+                if (this.supported) {
+                    if (hapticEnabled) {
+                        hapticToggleBtn.classList.add('active');
+                        icon.textContent = '📳';
+                        text.textContent = 'Haptic: ON';
+                    } else {
+                        hapticToggleBtn.classList.remove('active');
+                        icon.textContent = '📴';
+                        text.textContent = 'Haptic: OFF';
+                    }
+                    hapticToggleBtn.disabled = false;
+                } else {
+                    hapticToggleBtn.disabled = true;
+                    hapticToggleBtn.classList.remove('active');
+                    icon.textContent = '❌';
+                    text.textContent = 'Haptic: N/A';
+                }
+            }
+        }
+
+        // Initialize haptic feedback system
+        const haptic = new HapticFeedback();
+
+        // Game Functions
         function startGame(){
             board = Array(9).fill('');
             currentPlayer = 'X';
             running = true;
             statusEl.textContent = `Player ${currentPlayer}'s turn`;
+            
             cells.forEach((cell, idx) => {
                 cell.className = 'cell';
                 cell.textContent = '';
@@ -329,22 +446,36 @@
                 cell.addEventListener('click', handleClick);
                 cell.setAttribute('aria-label', `Cell ${idx+1}, empty`);
             });
+            
+            haptic.restart();
         }
 
         function handleClick(e){
             const cell = e.currentTarget;
             const idx = Number(cell.dataset.index);
-            if (!running || board[idx] !== '') return;
+            
+            // Ignore if game not running or cell already taken
+            if (!running || board[idx] !== '') {
+                haptic.error();
+                return;
+            }
 
+            // Haptic feedback for move
+            haptic.move();
+            
             markCell(cell, idx, currentPlayer);
 
             if (checkWin(currentPlayer)){
                 endGame(`${currentPlayer} wins!`, true);
+                // Haptic feedback for win
+                haptic.win();
                 return;
             }
 
             if (checkDraw()){
                 endGame("It's a draw!", false);
+                // Haptic feedback for draw
+                haptic.draw();
                 return;
             }
 
@@ -390,7 +521,26 @@
             }
         }
 
+        // Toggle haptic feedback
+        function toggleHaptic() {
+            hapticEnabled = !hapticEnabled;
+            haptic.toggle();
+            haptic.updateToggleButton();
+            
+            // Save preference to localStorage
+            localStorage.setItem('ticTacToeHaptic', hapticEnabled.toString());
+        }
+
+        // Event Listeners
         restartBtn.addEventListener('click', startGame);
+        hapticToggleBtn.addEventListener('click', toggleHaptic);
+
+        // Load haptic preference from localStorage
+        const savedHaptic = localStorage.getItem('ticTacToeHaptic');
+        if (savedHaptic !== null) {
+            hapticEnabled = savedHaptic === 'true';
+            haptic.updateToggleButton();
+        }
 
         // Initialize the game
         startGame();
@@ -399,8 +549,31 @@
         document.addEventListener('keydown', function(e) {
             if (e.key === 'r' || e.key === 'R') {
                 restartBtn.click();
+                e.preventDefault();
+            }
+            if (e.key === 'h' || e.key === 'H') {
+                hapticToggleBtn.click();
+                e.preventDefault();
             }
         });
+
+        // Add touch event listeners for better mobile interaction
+        cells.forEach(cell => {
+            cell.addEventListener('touchstart', function() {
+                if (!this.classList.contains('disabled')) {
+                    this.style.transform = 'scale(0.95)';
+                }
+            });
+            
+            cell.addEventListener('touchend', function() {
+                this.style.transform = '';
+            });
+        });
+
+        // Provide feedback about haptic support
+        if (!haptic.supported) {
+            console.log('Haptic feedback (vibration) is not supported on this device.');
+        }
     </script>
 </body>
-  </html>
+    </html>
