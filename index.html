@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Responsive Tic Tac Toe with Haptic Feedback</title>
+    <title>Tic Tac Toe</title>
     <style>
         :root {
             --bg: #f7f7fb;
@@ -323,7 +323,7 @@
                 <div class="buttons">
                     <button id="restart">Restart Game</button>
                     <button id="hapticToggle">
-                        <span class="haptic-icon">📳</span>
+                        <span class="haptic-icon">🫨</span>
                         <span>Haptic: ON</span>
                     </button>
                 </div>
@@ -331,7 +331,7 @@
         </section>
 
         <footer>
-            <small>Responsive Tic Tac Toe with Haptic Feedback — Two players, local</small>
+            <small>Two players, local!</small>
         </footer>
     </main>
 
@@ -411,11 +411,11 @@
                 if (this.supported) {
                     if (hapticEnabled) {
                         hapticToggleBtn.classList.add('active');
-                        icon.textContent = '📳';
+                        icon.textContent = '🫨';
                         text.textContent = 'Haptic: ON';
                     } else {
                         hapticToggleBtn.classList.remove('active');
-                        icon.textContent = '📴';
+                        icon.textContent = '😉';
                         text.textContent = 'Haptic: OFF';
                     }
                     hapticToggleBtn.disabled = false;
